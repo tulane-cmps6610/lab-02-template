@@ -1,4 +1,4 @@
-# CMPS 2200  Recitation 02
+# CMPS 6610 Lab 02
 
 In this recitation, we will investigate recurrences. 
 
