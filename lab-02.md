@@ -3,38 +3,254 @@
 **Name (Team Member 1):**_________________________  
 **Name (Team Member 2):**_________________________
 
-In this recitation, we will investigate recurrences. 
+You may work on this lab with a partner. We will investigate recurrences for work and span of algorithms.
 
-Some of your answers will go in `answers.md`. Other prompts will require you to edit `main.py`.
+## Tree method (2 pts)
+Solve the following recurrences by analyzing the recursion tree as shown in Module 2.1. 
 
-Refer back to the [README.md](README.md) for instruction on git, how to test your code, and how to submit properly to get all the points you've earned.
+a) $W(n) = 3T(n/4) + n^2$
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
 
-## Recurrences
 
-You've started looking at recurrences and how to we can establish asymptotic bounds on their values as a function of $n$. In this lab, we'll write some code to generate recursion trees (via a recursive function) for certain kinds of recurrences. By summing up nodes in the recurrence tree (that represent contributions to the recurrence) we can compare their total cost against the corresponding asymptotic bounds. We'll focus on  recurrences of the form:
+b) $W(n) = 2T(n/2)+ n/ \log n$
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
 
-$$ W(n) = aW(n/b) + f(n) $$
 
-where $W(1) = 1$.
+## Brick method (2pts)
+Solve the following recurrences using the brick method. First determine
+whether they are root-dominated, leaf-dominated, or balanced and give adequate explanation. Then,
+state the resulting asymptotic bound for $W(n)$.
 
-- [ ] 1. In `main.py`, you have stub code which includes a function `simple_work_calc`. Implement this function to return the value of $W(n)$ for arbitrary values of $a$ and $b$ with $f(n)=n$.
+a) $W(n) = 2 W(0.49 n) + 1.01 n$
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
 
-- [ ] 2. (1 points) Test that your function is correct by calling from the command-line `pytest main.py::test_simple_work` by completing the test cases and adding 3 additional ones.
+b) $W(n) = W(n/2) + W(n/4) + 0.999n$
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
 
-- [ ] 3. (2 points) Now implement `work_calc`, which generalizes the above so that we can now input $a$, $b$ and a *function* $f(n)$ as arguments. Test this code by completing the test cases in `test_work` and adding 3 more cases.
+c) $W(n) = \sqrt{n}W(\sqrt{n}) + \sqrt{n}$
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
 
-- [ ] 4. (3 points) Now, derive the asymptotic behavior of $W(n)$ using $f(n) = 1$, $f(n) = n$, and $f(n) = n^2$  with $a=2$ and $b=2$. Then, generate actual values for $W(n)$ for your code and confirm that the trends match your derivations.
 
-    **Enter your answer in answers.md**
 
-- [ ] 5. (4 points) Now that you have a nice way to empirically generate
-  values of $W(n)$, we can look at the relationship between $a$, $b$, and $f(n)$. Suppose that $f(n) = n^c$. What is the asymptotic behavior of $W(n)$ if $c < \log_b a$? What about $c > \log_b a$? And if they are equal? Modify `test_compare_work` to compare empirical values for different work functions (at several different values of $n$) to justify your answer. 
+## Analyzing a recursive, parallel algorithm
 
-    **Enter your answer in answers.md**
 
-- [ ] 6. (2 points) $W(n)$ is meant to represent the running time of
-  some recursive algorithm. Assume that we always have enough processors for every generated subproblem. Implement the function `span_calc` to compute the empirical span, where the work of the algorithm is given by $W(n)$ and the span of the combine step is equal to the work of the combine step. Implement `test_compare_span` to create a new comparison function for comparing span functions. 
-  
-- [ ] 7. (3 points) Derive the asymptotic expressions for the span of the recurrences you used in problem 4 above. Confirm that everything matches up as it should. 
+You were recently hired by Netflix to work on their movie recommendation
+algorithm. A key part of the algorithm works by comparing two users'
+movie ratings to determine how similar the users are. For example, to
+find users similar to Mary, we start by having Mary rank all her movies.
+Then, for another user Joe, we look at Joe's rankings and count how
+often his pairwise rankings disagree with Mary's:
 
-    **Enter your answer in answers.md**
+|      | Beetlejuice | Batman | Jackie Brown | Mr. Mom | Multiplicity |
+| ---- | ----------- | ------ | ------------ | ------- | ------------ |
+| Mary | 1           | 2      | 3            | 4       | 5            |
+| Joe  | 1           | **3**  | **4**        | **2**   | 5            |
+
+Here, Joe (somehow) liked *Mr. Mom* more than *Batman* and *Jackie
+Brown*, so the number of disagreements is 2:
+(3 <->  2, 4 <-> 2). More formally, a
+disagreement occurs for indices (i,j) when (j > i) and
+(value[j] < value[i]).
+
+When you arrived at Netflix, you were astounded to see that
+they were using the following algorithm to solve the problem:
+
+
+
+``` python
+def num_disagreements_slow(ranks):
+    """
+    Params:
+      ranks...list of ints for a user's move rankings (e.g., Joe in the example above)
+    Returns:
+      number of pairwise disagreements
+    """
+    count = 0
+    for i, vi in enumerate(ranks):
+        for j, vj in enumerate(ranks[i:]):
+            if vj < vi:
+                count += 1
+    return count
+```
+
+``` python 
+>>> num_disagreements_slow([1,3,4,2,5])
+2
+```
+
+a) What is the work/span of this method?
+
+.  
+.  
+.  
+.  
+.  
+
+You really don't really like what you're seeing, especially after completing Module 2. Armed with your recently acquired knowledge, you quickly threw together this
+recursive algorithm that you claim is both more efficient and easier to
+run on the giant parallel processing cluster Netflix has.
+
+``` python
+def num_disagreements_fast(ranks):
+    # base cases
+    if len(ranks) <= 1:
+        return (0, ranks)
+    elif len(ranks) == 2:
+        if ranks[1] < ranks[0]:
+            return (1, [ranks[1], ranks[0]])  # found a disagreement
+        else:
+            return (0, ranks)
+    # recursion
+    else:
+        left_disagreements, left_ranks = num_disagreements_fast(ranks[:len(ranks)//2])
+        right_disagreements, right_ranks = num_disagreements_fast(ranks[len(ranks)//2:])
+        
+        combined_disagreements, combined_ranks = combine(left_ranks, right_ranks)
+
+        return (left_disagreements + right_disagreements + combined_disagreements,
+                combined_ranks)
+
+def combine(left_ranks, right_ranks):
+    i = j = 0
+    result = []
+    n_disagreements = 0
+    while i < len(left_ranks) and j < len(right_ranks):
+        if right_ranks[j] < left_ranks[i]: 
+            n_disagreements += len(left_ranks[i:])   # found some disagreements
+            result.append(right_ranks[j])
+            j += 1
+        else:
+            result.append(left_ranks[i])
+            i += 1
+    
+    result.extend(left_ranks[i:])
+    result.extend(right_ranks[j:])
+    print('combine: input=(%s, %s) returns=(%s, %s)' % 
+          (left_ranks, right_ranks, n_disagreements, result))
+    return n_disagreements, result
+
+```
+
+```python
+>>> num_disagreements_fast([1,3,4,2,5])
+combine: input=([4], [2, 5]) returns=(1, [2, 4, 5])
+combine: input=([1, 3], [2, 4, 5]) returns=(1, [1, 2, 3, 4, 5])
+(2, [1, 2, 3, 4, 5])
+```
+
+As so often happens, your boss demands theoretical proof that this will
+be faster than their existing algorithm. To do so, complete the
+following:
+
+b) Describe, in your own words, what the `combine` method is doing and
+what it returns.
+
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+
+c) Write the work recurrence for `num_disagreements_fast`.
+
+.  
+.  
+.  
+.  
+.  
+.  
+
+d) Solve this recurrence using any method you like.
+
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+
+
+e) Assuming that your recursive calls to `num_disagreements_fast` are
+done in parallel, write the span recurrence for your algorithm.
+
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+
+f) Solve this recurrence using any method you like.
+
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+
+g) Now argue how your approach relates to the method used by Netflix.
+
